@@ -1,0 +1,23 @@
+# Node / Frontend
+node_modules/
+.next/
+dist/
+build/
+*.log
+
+# Python / Backend
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+env/
+venv/
+*.db
+*.sqlite3
+
+# Environment Variables & OS Files
+.env
+.env.local
+.DS_Store
+.idea/
+.vscode/
