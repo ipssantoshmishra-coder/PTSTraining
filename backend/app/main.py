@@ -30,5 +30,10 @@ def db_check(db: Session = Depends(get_db)):
     except Exception as e:
         return {"database_status": "Error", "details": str(e)}
 
-# Mount V1 API Router
-app.include_router(api_router)
+# MOUNT API ROUTER (Must be before the debug print loop)
+app.include_router(api_router, prefix="/api/v1")
+
+# Debug: Print registered routes on startup
+for route in app.routes:
+    if hasattr(route, "methods"):
+        print(f"REGISTERED ROUTE: {route.methods} -> {route.path}")

@@ -1,60 +1,64 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from app.core.database import Base
 
-# 1. Staff / Incharge Master Table (No hardcoded names)
-class Incharge(Base):
-    __tablename__ = "incharges"
-
-    id = Column(Integer, primary_key=True, index=True)
-    full_name = Column(String, nullable=False)
-    phone_number = Column(String, nullable=False)
-    designation = Column(String, nullable=False)  # e.g., "Hostel Incharge", "Indoor Instructor"
-
-
-# 2. Hostels / Lodging Table
-class Hostel(Base):
-    __tablename__ = "hostels"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)  # e.g., "Himalaya"
-    incharge_id = Column(Integer, ForeignKey("incharges.id"), nullable=True)
-
-    barracks = relationship("Barrack", back_populates="hostel")
-    incharge = relationship("Incharge")
-
-
-# 3. Barracks Table
-class Barrack(Base):
-    __tablename__ = "barracks"
-
-    id = Column(Integer, primary_key=True, index=True)
-    barrack_number = Column(String, nullable=False)
-    hostel_id = Column(Integer, ForeignKey("hostels.id"), nullable=False)
-    incharge_id = Column(Integer, ForeignKey("incharges.id"), nullable=True)
-
-    hostel = relationship("Hostel", back_populates="barracks")
-    incharge = relationship("Incharge")
-
-
-# 4. Recruit Master Table
 class Recruit(Base):
     __tablename__ = "recruits"
 
     id = Column(Integer, primary_key=True, index=True)
     roll_number = Column(String, unique=True, index=True, nullable=False)
+    dob = Column(String, nullable=False)  # Stored as DD/MM/YYYY
     full_name = Column(String, nullable=False)
     phone_number = Column(String, nullable=False)
-    home_district = Column(String, nullable=True)
-    bed_number = Column(String, nullable=True)
+    home_district = Column(String, default="N/A")
 
-    # Dynamic References (Allows different recruits to have different incharges)
-    barrack_id = Column(Integer, ForeignKey("barracks.id"), nullable=True)
-    indoor_incharge_id = Column(Integer, ForeignKey("incharges.id"), nullable=True)
-    outdoor_incharge_id = Column(Integer, ForeignKey("incharges.id"), nullable=True)
-    mess_incharge_id = Column(Integer, ForeignKey("incharges.id"), nullable=True)
+    # Lodging Info
+    hostel_name = Column(String, default="N/A")
+    barrack_no = Column(String, default="N/A")
+    bed_no = Column(String, default="N/A")
+    barrack_incharge_name = Column(String, default="N/A")
+    barrack_incharge_phone = Column(String, default="N/A")
 
-    barrack = relationship("Barrack")
-    indoor_incharge = relationship("Incharge", foreign_keys=[indoor_incharge_id])
-    outdoor_incharge = relationship("Incharge", foreign_keys=[outdoor_incharge_id])
-    mess_incharge = relationship("Incharge", foreign_keys=[mess_incharge_id])
+    # Fooding / Mess Info
+    mess_name = Column(String, default="Central Mess")
+    mess_incharge_name = Column(String, default="N/A")
+    mess_incharge_phone = Column(String, default="N/A")
+
+    # Indoor Training Info
+    indoor_batch_no = Column(String, default="N/A")
+    indoor_room_no = Column(String, default="N/A")
+    indoor_incharge_name = Column(String, default="N/A")
+    indoor_incharge_phone = Column(String, default="N/A")
+
+    # Outdoor Training Info
+    outdoor_company = Column(String, default="N/A")
+    outdoor_platoon = Column(String, default="N/A")
+    outdoor_incharge_name = Column(String, default="N/A")
+    outdoor_incharge_phone = Column(String, default="N/A")
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class LeaveApplication(Base):
+    __tablename__ = "leave_applications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recruit_id = Column(Integer, ForeignKey("recruits.id"), nullable=False)
+    leave_type = Column(String, nullable=False)  # "Casual", "Medical", "City Pass"
+    from_date = Column(String, nullable=False)
+    to_date = Column(String, nullable=False)
+    reason = Column(Text, nullable=False)
+    status = Column(String, default="Pending")  # "Pending", "Approved", "Rejected"
+    applied_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ExamSchedule(Base):
+    __tablename__ = "exam_schedules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subject_name = Column(String, nullable=False)
+    training_type = Column(String, nullable=False)  # "Indoor" or "Outdoor"
+    exam_date = Column(String, nullable=False)
+    exam_time = Column(String, nullable=False)
+    room_or_ground = Column(String, nullable=False)
