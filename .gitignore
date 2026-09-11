@@ -4,6 +4,8 @@ node_modules/
 dist/
 build/
 *.log
+.expo/
+web-build/
 
 # Python / Backend
 __pycache__/
@@ -21,3 +23,7 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+
+# Local secrets / CSV files with personal data
+*.csv
+.env
