@@ -28,7 +28,7 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = async () => {
     if (!rollNumber.trim() || dob.length !== 10) {
-      Alert.alert('Validation Error', 'Please enter valid Roll Number and DOB (DD/MM/YYYY).');
+      Alert.alert('Validation Error', 'Please Enter a valid Roll Number and DOB (DD/MM/YYYY).');
       return;
     }
     setLoading(true);
