@@ -9,6 +9,7 @@ import { loginRecruit } from '../api/recruitApi';
 import { ASSETS } from '../config/assets';
 import { COLORS, SPACING, RADIUS } from '../styles/theme';
 import { globalStyles } from '../styles/globalStyles';
+import { API_BASE_URL } from '../config/constants';
 
 export default function LoginScreen({ navigation }) {
   const [rollNumber, setRollNumber] = useState('3870223');
@@ -27,6 +28,8 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleLogin = async () => {
+    // 1. Immediate visual feedback to prove the button actually triggers
+    console.log("Current API URL being called:", API_BASE_URL); //For Debug
     if (!rollNumber.trim() || dob.length !== 10) {
       Alert.alert('Validation Error', 'Please Enter a valid Roll Number and DOB (DD/MM/YYYY).');
       return;
