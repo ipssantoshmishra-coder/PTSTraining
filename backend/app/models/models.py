@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text,Boolean
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -71,6 +71,16 @@ class Feedback(Base):
     roll_number = Column(String(50), nullable=False, index=True)
     recruit_name = Column(String(100), nullable=True)
     feedback_text = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Notice(Base):
+    __tablename__ = "notices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    category = Column(String(50), default="General")  # e.g., Parade, Exam, Mess, General
+    is_active = Column(Boolean, default=True)         # True = published, False = archived
     created_at = Column(DateTime(timezone=True), server_default=func.now())
       
        

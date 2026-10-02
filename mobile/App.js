@@ -11,6 +11,7 @@ import OutdoorScreen from './src/screens/OutdoorScreen';
 import LeavePortalScreen from './src/screens/LeavePortalScreen';
 import ExamPortalScreen from './src/screens/ExamPortalScreen';
 import FeedbackScreen from './src/screens/FeedbackScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -68,6 +69,11 @@ export default function App() {
           name="FeedbackPortal"
           component={FeedbackScreen}
           options={{ title: 'FeedBack' }}
+        />
+        <Stack.Screen 
+          name="Profile" 
+          component={ProfileScreen} 
+          options={{ title: 'प्रशिक्षु प्रोफ़ाइल (Profile)' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

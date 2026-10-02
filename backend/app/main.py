@@ -6,6 +6,7 @@ from sqlalchemy import text
 from app.core.config import settings
 from app.core.database import engine, Base, get_db
 from app.api.v1.router import api_router
+import app.models.models
 
 # Ensure tables exist
 Base.metadata.create_all(bind=engine)
