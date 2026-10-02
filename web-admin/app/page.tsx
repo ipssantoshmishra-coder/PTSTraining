@@ -5,6 +5,8 @@ import {
   adminLogin,
   getDashboardStats,
   getAllNotices,
+  getAllLeaves,
+  reviewLeave,
   createNotice,
   toggleNotice,
   deleteNotice,
@@ -14,6 +16,7 @@ import {
   DashboardStats,
   NoticeItem,
   FeedbackItem,
+  LeaveItem,
 } from '../lib/api';
 
 export default function AdminPortal() {
@@ -25,13 +28,14 @@ export default function AdminPortal() {
   const [authLoading, setAuthLoading] = useState(false);
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'notices' | 'feedbacks' | 'recruits'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'notices' | 'feedbacks' | 'recruits'|'leaves'>('dashboard');
 
   // Data States
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [recruits, setRecruits] = useState<any[]>([]);
+  const [leaves, setLeaves] = useState<LeaveItem[]>([]);
   const [loadingData, setLoadingData] = useState(false);
 
   // New Notice Form State
@@ -65,12 +69,14 @@ export default function AdminPortal() {
   const loadPortalData = async () => {
     setLoadingData(true);
     try {
-      const [sData, nData, fData, rData] = await Promise.all([
+      const [sData, nData, fData, rData,lData] = await Promise.all([
         getDashboardStats().catch(() => null),
         getAllNotices().catch(() => []),
         getAllFeedbacks().catch(() => []),
         getRecruitsList().catch(() => []),
+        getAllLeaves().catch(() => []),
       ]);
+      setLeaves(lData);
       setStats(sData);
       setNotices(nData);
       setFeedbacks(fData);
@@ -283,6 +289,26 @@ export default function AdminPortal() {
           >
             <span>💬</span> Feedback Desk
           </button>
+
+             <button
+  onClick={() => setActiveTab('leaves')}
+  className={`w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-between transition ${
+    activeTab === 'leaves'
+      ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+  }`}
+>
+  <div className="flex items-center gap-3">
+    <span>📝</span> Leave Approvals
+  </div>
+  {leaves.filter(l => l.status === 'PENDING').length > 0 && (
+    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-black">
+      {leaves.filter(l => l.status === 'PENDING').length}
+    </span>
+  )}
+</button>
+
+          
 
           <button
             onClick={() => setActiveTab('recruits')}
@@ -520,6 +546,92 @@ export default function AdminPortal() {
               </div>
             </div>
           )}
+
+
+
+         {/* ---------------Leave part ------------------ */}
+
+
+         {activeTab === 'leaves' && (
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <h2 className="text-xl font-black text-white">Leave Applications Desk</h2>
+      <span className="text-xs bg-slate-800 px-3 py-1.5 rounded-lg text-slate-400">
+        Pending: {leaves.filter((l) => l.status === 'PENDING').length}
+      </span>
+    </div>
+
+    <div className="space-y-4">
+      {leaves.length === 0 ? (
+        <p className="text-slate-500 text-sm">No leave requests found.</p>
+      ) : (
+        leaves.map((l) => (
+          <div
+            key={l.id}
+            className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col md:flex-row justify-between gap-4"
+          >
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="font-bold text-white text-base">{l.recruit_name || 'Trainee'}</span>
+                <span className="font-mono text-xs text-orange-400">Roll: {l.roll_number}</span>
+                <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
+                  {l.leave_type}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Duration: <strong className="text-slate-200">{l.start_date}</strong> to{' '}
+                <strong className="text-slate-200">{l.end_date}</strong> • Applied:{' '}
+                {new Date(l.applied_at).toLocaleDateString('en-IN')}
+              </p>
+              <p className="text-sm text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                {l.reason}
+              </p>
+            </div>
+
+            <div className="flex flex-col justify-between items-end gap-3 min-w-[140px]">
+              <span
+                className={`text-xs font-black px-2.5 py-1 rounded-full uppercase ${
+                  l.status === 'APPROVED'
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                    : l.status === 'REJECTED'
+                    ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                }`}
+              >
+                {l.status}
+              </span>
+
+              {l.status === 'PENDING' && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      await reviewLeave(l.id, 'APPROVED');
+                      loadPortalData();
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const remark = prompt('Reason for rejection:') || 'Not approved';
+                      await reviewLeave(l.id, 'REJECTED', remark);
+                      loadPortalData();
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
+                  >
+                    Reject
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+)}
+
 
           {/* ----------------- TAB 4: RECRUITS ROSTER ----------------- */}
           {activeTab === 'recruits' && (

@@ -102,3 +102,40 @@ export async function getRecruitsList(): Promise<any[]> {
   if (!res.ok) return [];
   return await res.json();
 }
+
+export interface LeaveItem {
+  id: number;
+  roll_number: string;
+  recruit_name?: string;
+  company?: string;
+  leave_type: string;
+  start_date: string;
+  end_date: string;
+  reason: string;
+  emergency_contact?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  admin_remarks?: string;
+  applied_at: string;
+}
+
+// Fetch all leaves
+export async function getAllLeaves(): Promise<LeaveItem[]> {
+  const res = await fetch(`${BASE_URL}/leaves/`);
+  if (!res.ok) return [];
+  return await res.json();
+}
+
+// Review (Approve/Reject) Leave
+export async function reviewLeave(
+  leaveId: number,
+  status: 'APPROVED' | 'REJECTED',
+  admin_remarks: string = ''
+): Promise<LeaveItem> {
+  const res = await fetch(`${BASE_URL}/leaves/${leaveId}/review`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, admin_remarks }),
+  });
+  if (!res.ok) throw new Error('Failed to update leave status');
+  return await res.json();
+}

@@ -3,6 +3,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.core.database import Base
+from sqlalchemy import Date
 
 class Recruit(Base):
     __tablename__ = "recruits"
@@ -45,13 +46,21 @@ class LeaveApplication(Base):
     __tablename__ = "leave_applications"
 
     id = Column(Integer, primary_key=True, index=True)
-    recruit_id = Column(Integer, ForeignKey("recruits.id"), nullable=False)
-    leave_type = Column(String, nullable=False)  # "Casual", "Medical", "City Pass"
-    from_date = Column(String, nullable=False)
-    to_date = Column(String, nullable=False)
+    roll_number = Column(String(50), nullable=False, index=True)
+    recruit_name = Column(String(100), nullable=True)
+    company = Column(String(50), nullable=True)
+    leave_type = Column(String(50), default="Casual Leave") # Medical, Casual, Emergency
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
     reason = Column(Text, nullable=False)
-    status = Column(String, default="Pending")  # "Pending", "Approved", "Rejected"
-    applied_at = Column(DateTime, default=datetime.utcnow)
+    emergency_contact = Column(String(20), nullable=True)
+    status = Column(String(20), default="PENDING") # PENDING, APPROVED, REJECTED
+    admin_remarks = Column(Text, nullable=True)
+    applied_at = Column(DateTime(timezone=True), server_default=func.now())
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+
+
+
 
 
 class ExamSchedule(Base):
