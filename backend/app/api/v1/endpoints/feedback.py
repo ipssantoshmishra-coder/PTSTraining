@@ -37,3 +37,13 @@ def get_recruit_feedbacks(roll_number: str, db: Session = Depends(get_db)):
         .order_by(Feedback.created_at.desc())
         .all()
     )
+
+@router.get("", response_model=List[FeedbackResponse])
+@router.get("/", response_model=List[FeedbackResponse])
+def get_all_feedbacks(db: Session = Depends(get_db)):
+    """Admin endpoint to fetch all submitted feedbacks ordered latest first"""
+    return (
+        db.query(Feedback)
+        .order_by(Feedback.created_at.desc())
+        .all()
+    )
