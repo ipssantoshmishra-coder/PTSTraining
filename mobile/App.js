@@ -10,12 +10,13 @@ import IndoorScreen from './src/screens/IndoorScreen';
 import OutdoorScreen from './src/screens/OutdoorScreen';
 import LeavePortalScreen from './src/screens/LeavePortalScreen';
 import ExamPortalScreen from './src/screens/ExamPortalScreen';
+import FeedbackScreen from './src/screens/FeedbackScreen';
 
 const Stack = createNativeStackNavigator();
 
 const commonHeaderOptions = {
-  headerStyle: { backgroundColor: '#0B2545' },
-  headerTintColor: '#FFFFFF',
+  headerStyle: { backgroundColor: 'rgba(250, 251, 244, 1)' },
+  headerTintColor: '#0a0101ff',
   headerTitleStyle: { fontWeight: 'bold' },
 };
 
@@ -62,6 +63,11 @@ export default function App() {
           name="ExamPortal"
           component={ExamPortalScreen}
           options={{ title: 'परीक्षा समय सारिणी (Exams)' }}
+        />
+         <Stack.Screen
+          name="FeedbackPortal"
+          component={FeedbackScreen}
+          options={{ title: 'FeedBack' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -32,6 +32,9 @@ class RecruitCreate(BaseModel):
     outdoor_incharge_name: Optional[str] = "N/A"
     outdoor_incharge_phone: Optional[str] = "N/A"
 
+    
+    
+
 class RecruitResponse(RecruitCreate):
     id: int
 

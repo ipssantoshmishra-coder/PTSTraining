@@ -1,6 +1,6 @@
 import { Incharge, Hostel, Recruit, RecruitPayload } from "@/types";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "https://ptstraining.onrender.com/api/v1";
 
 export const fetchDashboardData = async (): Promise<{
   recruits: Recruit[];

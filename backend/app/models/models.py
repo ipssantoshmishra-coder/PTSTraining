@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.core.database import Base
@@ -37,7 +38,7 @@ class Recruit(Base):
     outdoor_incharge_name = Column(String, default="N/A")
     outdoor_incharge_phone = Column(String, default="N/A")
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now)
 
 
 class LeaveApplication(Base):
@@ -62,3 +63,14 @@ class ExamSchedule(Base):
     exam_date = Column(String, nullable=False)
     exam_time = Column(String, nullable=False)
     room_or_ground = Column(String, nullable=False)
+
+class Feedback(Base):
+    __tablename__ = "feedbacks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    roll_number = Column(String(50), nullable=False, index=True)
+    recruit_name = Column(String(100), nullable=True)
+    feedback_text = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+      
+       
