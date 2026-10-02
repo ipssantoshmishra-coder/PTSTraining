@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://<your-render-app-name>.onrender.com/api/v1';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ptstraining.onrender.com/api/v1';
 
 export interface AdminUserSession {
   access_token: string;
