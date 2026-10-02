@@ -51,10 +51,10 @@ export default function FeedbackScreen({ route }) {
   };
 
   const handleApply = async () => {
-    if (wordCount < 20) {
+    if (wordCount < 5) {
       Alert.alert(
         'Feedback Incomplete',
-        `Please write at least 20 words.\nCurrent word count: ${wordCount}`
+        `Please write at least 5 words.\nCurrent word count: ${wordCount}`
       );
       return;
     }
@@ -129,7 +129,7 @@ export default function FeedbackScreen({ route }) {
               multiline
               numberOfLines={5}
               textAlignVertical="top"
-              placeholder="यहाँ अपना फीडबैक कम से कम 20 शब्दों में लिखें..."
+              placeholder="यहाँ अपना फीडबैक कम से कम 5 शब्दों में लिखें..."
               placeholderTextColor="#94A3B8"
             />
 
@@ -137,20 +137,20 @@ export default function FeedbackScreen({ route }) {
               <Text
                 style={[
                   styles.counterText,
-                  wordCount < 20 ? styles.counterPending : styles.counterSuccess,
+                  wordCount < 5 ? styles.counterPending : styles.counterSuccess,
                 ]}
               >
-                {wordCount}/20 शब्द {wordCount >= 20 ? '✓' : ''}
+                {wordCount}/5 शब्द {wordCount >= 5 ? '✓' : ''}
               </Text>
             </View>
 
             <TouchableOpacity
               style={[
                 styles.submitBtn,
-                wordCount < 20 && styles.submitBtnDisabled,
+                wordCount < 5 && styles.submitBtnDisabled,
               ]}
               onPress={handleApply}
-              disabled={loading || wordCount < 20}
+              disabled={loading || wordCount < 5}
               activeOpacity={0.8}
             >
               {loading ? (
