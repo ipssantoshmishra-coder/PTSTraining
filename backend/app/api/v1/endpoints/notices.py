@@ -59,3 +59,33 @@ def toggle_notice_status(notice_id: int, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(notice)
     return notice
+
+# Edit an existing notice
+@router.put("/{notice_id}", response_model=NoticeResponse)
+def update_notice(notice_id: int, payload: NoticeUpdate, db: Session = Depends(get_db)):
+    notice = db.query(Notice).filter(Notice.id == notice_id).first()
+    if not notice:
+        raise HTTPException(status_code=404, detail="Notice not found")
+
+    if payload.title is not None:
+        notice.title = payload.title.strip()
+    if payload.message is not None:
+        notice.message = payload.message.strip()
+    if payload.category is not None:
+        notice.category = payload.category
+    if payload.is_active is not None:
+        notice.is_active = payload.is_active
+
+    db.commit()
+    db.refresh(notice)
+    return notice
+
+# Delete a notice permanently
+@router.delete("/{notice_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_notice(notice_id: int, db: Session = Depends(get_db)):
+    notice = db.query(Notice).filter(Notice.id == notice_id).first()
+    if not notice:
+        raise HTTPException(status_code=404, detail="Notice not found")
+    db.delete(notice)
+    db.commit()
+    return None

@@ -1,5 +1,4 @@
-import React, { useLayoutEffect, useState,useEffect } from 'react';
-import { fetchLatestNoticeApi } from '../api/noticeApi';
+import React, { useLayoutEffect, useState, useCallback, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,40 +7,72 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
+  RefreshControl,
+  Animated,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { fetchAllActiveNoticesApi } from '../api/noticeApi';
 
 export default function DashboardScreen({ route, navigation }) {
   const { recruit } = route.params || {};
 
-  // Notice board content
-const [notice, setNotice] = useState({
-  title: 'वर्तमान में कोई नई सूचना उपलब्ध नहीं है।',
-  timestamp: '',
-});
+  const [notices, setNotices] = useState([]);
+  const [loadingNotices, setLoadingNotices] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-useEffect(() => {
-  async function loadNotice() {
-    const data = await fetchLatestNoticeApi();
-    if (data) {
-      const formattedDate = new Date(data.created_at).toLocaleString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      setNotice({
-        title: data.message || data.title,
-        timestamp: formattedDate,
-      });
+  // Red glow pulsing animation for the latest notice
+  const glowAnim = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0.4,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [glowAnim]);
+
+  // Fetch all active notices and keep top 5
+  const loadNotices = useCallback(async () => {
+    try {
+      const data = await fetchAllActiveNoticesApi();
+      if (Array.isArray(data)) {
+        // Take up to 5 latest notices
+        setNotices(data.slice(0, 5));
+      }
+    } catch (err) {
+      console.log('Notice load error:', err.message);
+    } finally {
+      setLoadingNotices(false);
+      setRefreshing(false);
     }
-  }
-  loadNotice();
-}, [])
+  }, []);
 
+  // Auto-refresh: runs on focus AND polls every 15s (no logout needed)
+  useFocusEffect(
+    useCallback(() => {
+      loadNotices();
+      const interval = setInterval(loadNotices, 15000);
+      return () => clearInterval(interval);
+    }, [loadNotices])
+  );
 
-  
-  // 4 Primary Training Tabs (Clean red capsules matching the screenshot)
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadNotices();
+  };
+
   const trainingModules = [
     { title: 'रहने का स्थान (Lodging)', screen: 'Lodging' },
     { title: 'भोजनालय (Fooding)', screen: 'Fooding' },
@@ -69,6 +100,19 @@ useEffect(() => {
     });
   }, [navigation]);
 
+  const formatNoticeTime = (isoString) => {
+    if (!isoString) return '';
+    const d = new Date(isoString);
+    return d.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -77,31 +121,95 @@ useEffect(() => {
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
-        {/* Welcome Section - Exact Screenshot Replication */}
+        {/* Welcome Section */}
         <View style={styles.welcomeSection}>
           <Text style={styles.welcomeName}>
-            Welcome  {recruit?.full_name || 'Sachin Verma'}
+            Welcome  {recruit?.full_name || 'Trainee'}
           </Text>
           <Text style={styles.metaLine}>
-            Roll Number: {recruit?.roll_number || '3870223'}
+            Roll Number: {recruit?.roll_number || 'N/A'}
           </Text>
           <Text style={styles.metaLine}>
-            Home District: {recruit?.home_district || 'Ambedkar Nagar'}
+            Home District: {recruit?.home_district || 'N/A'}
           </Text>
         </View>
 
-        {/* Notice Board Section */}
+        {/* Notice Board Heading */}
         <Text style={styles.noticeHeading}>महत्वपूर्ण सूचना</Text>
-        <View style={styles.noticeCard}>
-          <Text style={styles.noticeBody}>{notice.title}</Text>
-          <Text style={styles.noticeTime}>{notice.timestamp}</Text>
+
+        {/* Scrollable Notice Container */}
+        <View style={styles.noticeContainer}>
+          <ScrollView
+            style={styles.noticeInnerScroll}
+            nestedScrollEnabled={true}
+            showsVerticalScrollIndicator={true}
+          >
+            {loadingNotices ? (
+              <ActivityIndicator color="#DC2626" style={{ marginVertical: 24 }} />
+            ) : notices.length === 0 ? (
+              <Text style={styles.noNoticeText}>
+                वर्तमान में कोई नई सूचना उपलब्ध नहीं है।
+              </Text>
+            ) : (
+              notices.map((item, index) => {
+                const isLatest = index === 0;
+
+                return (
+                  <View
+                    key={item.id || index}
+                    style={[
+                      styles.noticeItem,
+                      isLatest ? styles.latestNoticeItem : styles.pastNoticeItem,
+                      index === notices.length - 1 && { borderBottomWidth: 0 },
+                    ]}
+                  >
+                    {/* Glowing Accent Indicator for Latest */}
+                    {isLatest && (
+                      <View style={styles.latestHeaderRow}>
+                        <Animated.View
+                          style={[
+                            styles.glowDot,
+                            { opacity: glowAnim },
+                          ]}
+                        />
+                        <Text style={styles.latestBadgeText}>नवीनतम सूचना (NEW)</Text>
+                      </View>
+                    )}
+
+                    {/* Numbered Notice: 1. xxxxx */}
+                    <Text
+                      style={[
+                        styles.noticeText,
+                        isLatest ? styles.latestNoticeText : styles.pastNoticeText,
+                      ]}
+                    >
+                      {`${index + 1}. ${item.message || item.title}`}
+                    </Text>
+
+                    {/* Timestamp */}
+                    <Text
+                      style={[
+                        styles.noticeTime,
+                        isLatest && { color: '#B91C1C' },
+                      ]}
+                    >
+                      {formatNoticeTime(item.created_at)}
+                    </Text>
+                  </View>
+                );
+              })
+            )}
+          </ScrollView>
         </View>
 
-        {/* Training Information Header */}
+        {/* Training Section Header */}
         <Text style={styles.sectionHeading}>Training Information</Text>
 
-        {/* 4 Solid Red Action Buttons */}
+        {/* 4 Action Buttons */}
         <View style={styles.moduleContainer}>
           {trainingModules.map((item, index) => (
             <TouchableOpacity
@@ -116,7 +224,7 @@ useEffect(() => {
         </View>
       </ScrollView>
 
-      {/* Bottom Bar: Profile First */}
+      {/* Bottom Bar: Profile first, high visibility tabs */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
           style={styles.tabItem}
@@ -169,15 +277,13 @@ useEffect(() => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E8F0F8', // Soft neutral sky background from screenshot
+    backgroundColor: '#E8F0F8',
   },
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 95,
   },
-
-  /* Header Logout (Clean, Prominent Red Pill) */
   headerLogoutBtn: {
     backgroundColor: '#E11D48',
     paddingVertical: 6,
@@ -192,80 +298,135 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  /* Welcome Section (Exact Screenshot Typography & Spacing) */
+  /* Welcome Section */
   welcomeSection: {
     paddingTop: 4,
-    paddingBottom: 16,
+    paddingBottom: 14,
     paddingHorizontal: 4,
   },
   welcomeName: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#1D70B8',          // Vibrant cerulean / sky blue from reference
+    color: '#1D70B8',
     letterSpacing: 0.2,
-    marginBottom: 8,           // Spacing between name and roll number
+    marginBottom: 6,
   },
   metaLine: {
     fontSize: 18,
     fontWeight: '400',
-    color: '#1E3A8A',          // Deep classic navy matching entire line uniformly
+    color: '#1E3A8A',
     letterSpacing: 0.2,
-    marginBottom: 4,           // Compact natural gap between metadata rows
+    marginBottom: 4,
   },
 
   /* Notice Board Section */
   noticeHeading: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#E11D48',          // Clean coral red title
+    color: '#E11D48',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  noticeCard: {
+  noticeContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
-    padding: 18,
-    minHeight: 140,
-    justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 26,
+    marginBottom: 20,
+    maxHeight: 240, // Keeps the notice board neatly scrollable
+    overflow: 'hidden',
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 5,
   },
-  noticeBody: {
-    fontSize: 15,
-    color: '#1E293B',
-    lineHeight: 24,
+  noticeInnerScroll: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  noNoticeText: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+
+  /* Notice Item Styles */
+  noticeItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  latestNoticeItem: {
+    backgroundColor: '#FEF2F2',
+    marginHorizontal: -8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderLeftWidth: 5,
+    borderLeftColor: '#DC2626',
+    marginBottom: 6,
+  },
+  pastNoticeItem: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#CBD5E1',
+    paddingLeft: 10,
+  },
+
+  /* Glowing Alert on Latest Notice */
+  latestHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  glowDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#DC2626',
+    marginRight: 6,
+  },
+  latestBadgeText: {
+    color: '#DC2626',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+
+  noticeText: {
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  latestNoticeText: {
+    fontWeight: '700',
+    color: '#991B1B', // Bold red for latest
+  },
+  pastNoticeText: {
     fontWeight: '500',
+    color: '#334155', // Regular slate for previous
   },
   noticeTime: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
     textAlign: 'right',
-    marginTop: 12,
+    marginTop: 4,
     fontWeight: '500',
   },
 
-  /* Training Section Header */
+  /* Training Information */
   sectionHeading: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#0F2C59',          // Deep authoritative training header
+    color: '#0F2C59',
     textAlign: 'center',
-    marginBottom: 18,
+    marginBottom: 16,
   },
   moduleContainer: {
     width: '100%',
     gap: 12,
   },
-
-  /* 4 Action Buttons (Red Pill Bars Matching Reference Screenshot) */
   trainingBtn: {
-    backgroundColor: '#FF1E1E', // Vibrant police red
+    backgroundColor: '#FF1E1E',
     borderRadius: 12,
     paddingVertical: 15,
     paddingHorizontal: 16,

@@ -29,3 +29,13 @@ backend/.env
 # Local secrets / CSV files with personal data
 *.csv
 .env
+
+# Local seed/migration scripts containing hardcoded credentials
+seed_admins.py
+load_asi_data.py
+
+# Recruit data files (CSV, Excel, Sheets)
+*.csv
+*.xlsx
+*.xls
+ASI Accountant Details*.csv

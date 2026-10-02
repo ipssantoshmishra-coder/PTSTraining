@@ -82,5 +82,16 @@ class Notice(Base):
     category = Column(String(50), default="General")  # e.g., Parade, Exam, Mess, General
     is_active = Column(Boolean, default=True)         # True = published, False = archived
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class AdminUser(Base):
+    __tablename__ = "admin_users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, nullable=False, index=True)
+    full_name = Column(String(100), nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    role = Column(String(20), default="staff")  # 'super_admin', 'staff', 'viewer'
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())    
       
        
