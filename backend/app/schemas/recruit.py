@@ -3,7 +3,8 @@ from typing import Optional
 
 class RecruitLoginRequest(BaseModel):
     roll_number: str
-    dob: str
+    credential: str  # Can be DOB (DD/MM/YYYY) or numeric PIN
+    
 
 class RecruitCreate(BaseModel):
     roll_number: str
@@ -40,3 +41,7 @@ class RecruitResponse(RecruitCreate):
 
     class Config:
         from_attributes = True
+
+class SetPinRequest(BaseModel):
+    roll_number: str
+    pin: str  # 4 to 6 digit numeric PIN

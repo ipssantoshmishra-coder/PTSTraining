@@ -1,28 +1,38 @@
-// mobile/src/api/recruitApi.js
 import { API_BASE_URL } from '../config/constants';
+const BASE = API_BASE_URL.replace(/\/+$/, '');
 
-export const loginRecruit = async (rollNumber, dob) => {
-  const targetUrl = `${API_BASE_URL}/recruits/login`;
-  console.log("➡️ SENDING LOGIN REQUEST TO:", targetUrl); // <-- Verify in Metro terminal
+export async function loginRecruit(rollNumber, credential) {
+  const res = await fetch(`${BASE}/recruits/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      roll_number: rollNumber,
+      credential: credential,
+    }),
+  });
 
-  try {
-    const response = await fetch(targetUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        roll_number: rollNumber.trim(),
-        dob: dob.trim(),
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Server error: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.log("Login API Error:", error);
-    throw error;
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'लॉगिन विफल (Login failed)');
   }
-};
+
+  return await res.json();
+}
+
+export async function setRecruitPinApi(rollNumber, pin) {
+  const res = await fetch(`${BASE}/recruits/set-pin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      roll_number: rollNumber,
+      pin: pin,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to update PIN');
+  }
+
+  return await res.json();
+}

@@ -40,6 +40,7 @@ class Recruit(Base):
     outdoor_incharge_phone = Column(String, default="N/A")
 
     created_at = Column(DateTime, default=datetime.now)
+    pin_hash = Column(String(255), nullable=True)
 
 
 class LeaveApplication(Base):

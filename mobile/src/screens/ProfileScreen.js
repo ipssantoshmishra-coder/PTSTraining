@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,10 +6,17 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { setRecruitPinApi } from '../api/recruitApi';
 
 export default function ProfileScreen({ route, navigation }) {
   const { recruit } = route.params || {};
+
+  const [newPin, setNewPin] = useState('');
+  const [savingPin, setSavingPin] = useState(false);
 
   const profileFields = [
     { label: 'पूरा नाम (Full Name)', value: recruit?.full_name || 'N/A' },
@@ -22,9 +29,43 @@ export default function ProfileScreen({ route, navigation }) {
     { label: 'संपर्क नंबर (Mobile)', value: recruit?.phone_number || 'N/A' },
   ];
 
+  const handleSetPin = async () => {
+    const cleanPin = newPin.trim();
+
+    if (!cleanPin) {
+      Alert.alert('त्रुटि (Error)', 'कृपया नया 4 या 6 अंकों का पिन दर्ज करें।');
+      return;
+    }
+
+    if (!/^\d{4}$/.test(cleanPin) && !/^\d{6}$/.test(cleanPin)) {
+      Alert.alert('त्रुटि (Invalid PIN)', 'सुरक्षा पिन केवल 4 या 6 अंकों की संख्या होनी चाहिए।');
+      return;
+    }
+
+    if (!recruit?.roll_number) {
+      Alert.alert('त्रुटि (Error)', 'प्रशिक्षु रोल नंबर नहीं मिला।');
+      return;
+    }
+
+    setSavingPin(true);
+    try {
+      await setRecruitPinApi(recruit.roll_number, cleanPin);
+      Alert.alert(
+        'सफलता (Success)',
+        'सुरक्षा पिन सफलतापूर्वक सेट हो गया है! अब आप अगली बार सीधे इस पिन से लॉगिन कर सकते हैं।'
+      );
+      setNewPin('');
+    } catch (err) {
+      Alert.alert('पिन अपडेट विफल', err.message || 'पिन सेट करने में त्रुटि हुई। कृपया पुनः प्रयास करें।');
+    } finally {
+      setSavingPin(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {/* Avatar & Basic Info */}
         <View style={styles.avatarCard}>
           <View style={styles.avatarCircle}>
             <Text style={styles.avatarText}>
@@ -35,6 +76,40 @@ export default function ProfileScreen({ route, navigation }) {
           <Text style={styles.avatarRoll}>Roll No: {recruit?.roll_number}</Text>
         </View>
 
+        {/* Set / Change PIN Card */}
+        <View style={styles.pinCard}>
+          <Text style={styles.pinTitle}>लॉगिन पिन बनाएं / बदलें (Set Quick PIN)</Text>
+          <Text style={styles.pinSubtitle}>
+            अगली बार जन्म तिथि के स्थान पर सीधे 4 या 6 अंकों के पिन से आसानी से लॉगिन करें:
+          </Text>
+
+          <View style={styles.pinRow}>
+            <TextInput
+              style={styles.pinInput}
+              placeholder="4 या 6-अंकीय पिन"
+              placeholderTextColor="#94A3B8"
+              keyboardType="numeric"
+              maxLength={6}
+              secureTextEntry
+              value={newPin}
+              onChangeText={setNewPin}
+            />
+            <TouchableOpacity
+              style={[styles.pinSaveBtn, savingPin && { opacity: 0.7 }]}
+              onPress={handleSetPin}
+              disabled={savingPin}
+              activeOpacity={0.8}
+            >
+              {savingPin ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.pinSaveText}>सेव करें (Save)</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Trainee Details List */}
         <View style={styles.detailsCard}>
           <Text style={styles.cardHeader}>प्रशिक्षु विवरण (Profile Information)</Text>
           {profileFields.map((item, index) => (
@@ -45,6 +120,7 @@ export default function ProfileScreen({ route, navigation }) {
           ))}
         </View>
 
+        {/* Logout Button */}
         <TouchableOpacity
           style={styles.logoutBtn}
           onPress={() => navigation.replace('Login')}
@@ -97,6 +173,61 @@ const styles = StyleSheet.create({
     color: '#93C5FD',
     marginTop: 2,
   },
+  /* PIN Setup Card */
+  pinCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+  },
+  pinTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F3964',
+    marginBottom: 4,
+  },
+  pinSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  pinRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  pinInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    backgroundColor: '#F8FAFC',
+    color: '#0F172A',
+  },
+  pinSaveBtn: {
+    backgroundColor: '#0F3964',
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 110,
+  },
+  pinSaveText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  /* Details Card */
   detailsCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
