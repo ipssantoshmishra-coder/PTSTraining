@@ -160,12 +160,16 @@ export default function AdminPortal() {
       <main className="min-h-screen bg-slate-950 flex flex-col justify-center items-center px-4 selection:bg-orange-500 selection:text-white">
         <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-600/10 border border-red-500/20 text-3xl mb-3">
-              🛡️
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-600/10 border border-red-500/20 text-3xl mb-3">
+              <img
+                src="/police_logo.png"
+                alt="Uttar Pradesh Police Emblem"
+                className="w-full h-full object-contain"
+              />
             </div>
             <h1 className="text-2xl font-black tracking-wide text-white">PTS KALPI</h1>
             <p className="text-sm font-semibold text-orange-500 uppercase tracking-widest mt-1">
-              Admin & Command Portal
+              Training Management System
             </p>
           </div>
 
@@ -229,7 +233,11 @@ export default function AdminPortal() {
       {/* Top Header Bar */}
       <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">🛡️</span>
+          <img
+             src="/police_logo.png"
+             alt="PTS Kalpi Logo"
+             className="w-10 h-10 object-contain bg-white rounded-lg p-1"
+            />
           <div>
             <h1 className="text-lg font-black text-white leading-none">PTS KALPI CONTROL DESK</h1>
             <p className="text-xs text-slate-400 mt-1">Police Training School Administration</p>
