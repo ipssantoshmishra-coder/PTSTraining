@@ -10,6 +10,10 @@
       "supportsTablet": true
     },
     "android": {
+      "navigationBar": {
+        "backgroundColor": "#FFFFFF",
+        "barStyle": "dark-content"
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/police_logo.png",
         "backgroundColor": "#0B2545"

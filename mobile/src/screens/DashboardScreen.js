@@ -13,8 +13,11 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { fetchAllActiveNoticesApi } from '../api/noticeApi';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
 
 export default function DashboardScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { recruit } = route.params || {};
 
   const [notices, setNotices] = useState([]);
@@ -119,7 +122,7 @@ export default function DashboardScreen({ route, navigation }) {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 110 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -225,7 +228,10 @@ export default function DashboardScreen({ route, navigation }) {
       </ScrollView>
 
       {/* Bottom Bar: Profile first, high visibility tabs */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar,{ 
+                  paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 16 : 8),
+                  height: (Platform.OS === 'android' ? 68 : 58) + insets.bottom,
+             }]}>
         <TouchableOpacity
           style={styles.tabItem}
           onPress={() => navigation.navigate('Profile', { recruit })}
