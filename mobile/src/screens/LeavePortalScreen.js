@@ -38,33 +38,87 @@ export default function LeavePortalScreen({ route }) {
     loadHistory();
   }, [loadHistory]);
 
-  // Convert DD/MM/YYYY to YYYY-MM-DD for PostgreSQL Date format
-  const parseDateToISO = (dateStr) => {
+  // Handle contact input: only allow digits up to 10 digits
+  const handleContactChange = (text) => {
+    const numericOnly = text.replace(/[^0-9]/g, '');
+    setEmergencyContact(numericOnly);
+  };
+
+  // Convert DD/MM/YYYY into a real Date object & ISO string (YYYY-MM-DD)
+  const parseAndValidateDate = (dateStr) => {
     const cleaned = dateStr.trim();
     const parts = cleaned.split(/[\/\-\.]/);
     if (parts.length !== 3) return null;
 
-    let day = parts[0].padStart(2, '0');
-    let month = parts[1].padStart(2, '0');
-    let year = parts[2];
+    let day = parseInt(parts[0], 10);
+    let month = parseInt(parts[1], 10);
+    let year = parseInt(parts[2], 10);
 
-    if (year.length === 2) year = `20${year}`;
-    if (day.length !== 2 || month.length !== 2 || year.length !== 4) return null;
+    if (parts[2].length === 2) year = 2000 + year;
 
-    return `${year}-${month}-${day}`;
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 2026 || year > 2030) return null;
+
+    // JavaScript Date constructor (month is 0-indexed)
+    const dateObj = new Date(year, month - 1, day);
+    if (
+      dateObj.getFullYear() !== year ||
+      dateObj.getMonth() !== month - 1 ||
+      dateObj.getDate() !== day
+    ) {
+      return null;
+    }
+
+    const isoStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return { dateObj, isoStr };
   };
 
   const handleApply = async () => {
-    if (!fromDate.trim() || !toDate.trim() || !reason.trim()) {
-      Alert.alert('त्रुटि (Error)', 'कृपया सभी अनिवार्य विवरण भरें (Please fill all required fields).');
+    // 1. Mandatory Fields Check
+    if (!fromDate.trim() || !toDate.trim() || !reason.trim() || !emergencyContact.trim()) {
+      Alert.alert('त्रुटि (Error)', 'कृपया सभी अनिवार्य विवरण भरें (Please fill all fields).');
       return;
     }
 
-    const isoStart = parseDateToISO(fromDate);
-    const isoEnd = parseDateToISO(toDate);
+    // 2. Mobile Number Validation (Strict 10 digits, starts with 6-9)
+    if (!/^[6-9]\d{9}$/.test(emergencyContact.trim())) {
+      Alert.alert(
+        'अमान्य मोबाइल नंबर (Invalid Mobile)',
+        'कृपया 10 अंकों का मान्य भारतीय मोबाइल नंबर दर्ज करें (शुरुआत 6, 7, 8 या 9 से हो)।'
+      );
+      return;
+    }
 
-    if (!isoStart || !isoEnd) {
-      Alert.alert('गलत दिनांक (Invalid Date)', 'कृपया दिनांक DD/MM/YYYY प्रारूप में दर्ज करें (e.g. 15/10/2026).');
+    // 3. Date Format Validation
+    const parsedStart = parseAndValidateDate(fromDate);
+    const parsedEnd = parseAndValidateDate(toDate);
+
+    if (!parsedStart || !parsedEnd) {
+      Alert.alert(
+        'गलत दिनांक (Invalid Date)',
+        'कृपया दिनांक सही प्रारूप DD/MM/YYYY में दर्ज करें (उदा. 15/10/2026)।'
+      );
+      return;
+    }
+
+    // 4. Back-Date Validation
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (parsedStart.dateObj < today) {
+      Alert.alert(
+        'अमान्य प्रारंभ तिथि (Back Date Not Allowed)',
+        'अवकाश प्रारंभ तिथि आज या भविष्य की तिथि होनी चाहिए। पूर्व तिथि (Back-date) मान्य नहीं है।'
+      );
+      return;
+    }
+
+    // 5. Date Range Logical Check (To Date >= From Date)
+    if (parsedEnd.dateObj < parsedStart.dateObj) {
+      Alert.alert(
+        'अमान्य दिनांक क्रम (Invalid Date Range)',
+        'अंतिम तिथि (To Date) प्रारंभ तिथि (From Date) से पहले की नहीं हो सकती।'
+      );
       return;
     }
 
@@ -76,10 +130,10 @@ export default function LeavePortalScreen({ route }) {
         recruit_name: recruit?.full_name || 'Trainee',
         company: recruit?.outdoor_company || '',
         leave_type: leaveType,
-        start_date: isoStart,
-        end_date: isoEnd,
+        start_date: parsedStart.isoStr,
+        end_date: parsedEnd.isoStr,
         reason: reason.trim(),
-        emergency_contact: emergencyContact.trim() || recruit?.phone_number || '',
+        emergency_contact: emergencyContact.trim(),
       });
 
       Alert.alert('सफलता (Success)', 'अवकाश आवेदन सफलतापूर्वक जमा हो गया है!');
@@ -87,7 +141,7 @@ export default function LeavePortalScreen({ route }) {
       setToDate('');
       setReason('');
       setEmergencyContact('');
-      loadHistory(); // Refresh history
+      loadHistory();
     } catch (err) {
       Alert.alert('आवेदन विफल (Submission Failed)', err.message);
     } finally {
@@ -130,42 +184,45 @@ export default function LeavePortalScreen({ route }) {
 
         {/* Date Inputs */}
         <View style={styles.dateRow}>
-          <View style={{ flex: 1, marginRight: 8 }}>
+          <View style={styles.dateCol}>
             <Text style={styles.label}>प्रारंभ तिथि (From)</Text>
             <TextInput
               style={styles.input}
               value={fromDate}
               onChangeText={setFromDate}
               placeholder="DD/MM/YYYY"
-              keyboardType="numeric"
+              keyboardType="numbers-and-punctuation"
+              maxLength={10}
             />
           </View>
-          <View style={{ flex: 1, marginLeft: 8 }}>
+          <View style={styles.dateCol}>
             <Text style={styles.label}>अंतिम तिथि (To)</Text>
             <TextInput
               style={styles.input}
               value={toDate}
               onChangeText={setToDate}
               placeholder="DD/MM/YYYY"
-              keyboardType="numeric"
+              keyboardType="numbers-and-punctuation"
+              maxLength={10}
             />
           </View>
         </View>
 
         {/* Emergency Contact */}
-        <Text style={styles.label}>आपातकालीन संपर्क नंबर (Emergency Contact No.)</Text>
+        <Text style={styles.label}>आपातकालीन संपर्क नंबर (10-Digit Mobile No.)</Text>
         <TextInput
           style={styles.input}
           value={emergencyContact}
-          onChangeText={setEmergencyContact}
-          placeholder="10-digit mobile number"
-          keyboardType="phone-pad"
+          onChangeText={handleContactChange}
+          placeholder="e.g. 9876543210"
+          keyboardType="numeric"
+          maxLength={10}
         />
 
         {/* Reason */}
         <Text style={styles.label}>कारण (Reason for Leave)</Text>
         <TextInput
-          style={[styles.input, { height: 75 }]}
+          style={[styles.input, { height: 80 }]}
           value={reason}
           onChangeText={setReason}
           multiline
@@ -270,6 +327,10 @@ const styles = StyleSheet.create({
   },
   dateRow: {
     flexDirection: 'row',
+    gap: 12,
+  },
+  dateCol: {
+    flex: 1,
   },
   btn: {
     backgroundColor: '#0B2545',
@@ -280,8 +341,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   btnText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 15 },
-
-  /* History list */
   historyContainer: {
     marginTop: 26,
     borderTopWidth: 1,
