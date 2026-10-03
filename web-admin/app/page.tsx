@@ -182,7 +182,7 @@ export default function AdminPortal() {
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-                Officer Username
+                Username
               </label>
               <input
                 type="text"
